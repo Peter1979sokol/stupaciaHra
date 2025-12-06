@@ -34,41 +34,44 @@ quadrants = {
 }
 
 # Definuj poradie rozsvetlenia (naprogramovateľné) - minimálne 30 položiek
+# Môže obsahovať aj viacero farieb naraz ako zoznam
 sequence = ['zlta', 'modra', 'zelena', 'cervena',
-            'zlta', 'cervena', 'modra', 'zelena',
-            'cervena', 'zlta', 'zelena', 'modra',
-            'modra', 'zelena', 'cervena', 'zlta',
+            ['zlta', 'modra'], 'cervena', 'modra', 'zelena',
+            'cervena', 'zlta', ['zelena', 'cervena'], 'modra',
+            'modra', 'zelena', 'cervena', ['zlta', 'cervena'],
             'zelena', 'cervena', 'zlta', 'modra',
-            'cervena', 'modra', 'zlta', 'zelena',
-            'zlta', 'modra', 'cervena', 'zelena',
-            'modra', 'zlta', 'zelena', 'cervena']
+            ['cervena', 'modra'], 'modra', 'zlta', 'zelena',
+            'zlta', ['modra', 'zelena'], 'cervena', 'zelena',
+            'modra', 'zlta', ['zlta', 'cervena', 'modra'], 'cervena']
 
 
 def draw_quadrants(active=None):
-    """Vykreslí všetky kvadranty, active kvadrant bude farebný, ostatné čierne"""
+    """Vykreslí všetky kvadranty, active môže byť jeden kvadrant alebo zoznam"""
+    # Ak active je string, preveď ho na zoznam
+    if isinstance(active, str):
+        active = [active]
+    elif active is None:
+        active = []
+
     for color_name, rect in quadrants.items():
-        if color_name == active:
+        if color_name in active:
             color = COLORS[color_name]['light']
         else:
             color = BLACK  # Vypnuté kvadranty sú čierne
 
         pygame.draw.rect(screen, color, rect)
 
-    # Nakreslí biele čiary medzi kvadrantmi
-    pygame.draw.line(screen, WHITE, (WIDTH // 2, 0), (WIDTH // 2, HEIGHT), 3)
-    pygame.draw.line(screen, WHITE, (0, HEIGHT // 2), (WIDTH, HEIGHT // 2), 3)
-
     pygame.display.flip()
 
 
 def show_sequence():
     """Zobrazí celé poradie rozsvetlením kvadrantov"""
-    for color_name in sequence:
-        # Rozsvieti kvadrant
-        draw_quadrants(active=color_name)
+    for item in sequence:
+        # Rozsvieti kvadrant/kvadranty
+        draw_quadrants(active=item)
         pygame.time.wait(1000)  # Počkaj 1 sekundu
 
-        # Zhasni (vráť na tmavú farbu)
+        # Zhasni (vráť na čiernu)
         draw_quadrants()
         pygame.time.wait(300)  # Krátka pauza medzi kvadrantmi
 
@@ -108,8 +111,15 @@ def main():
 
             screen.blit(text, text_rect)
 
-            # Zobraz sekvenciu
-            seq_text = small_font.render(f"Sekvencia: {' -> '.join(sequence)}", True, WHITE)
+            # Zobraz sekvenciu ako text
+            seq_display = []
+            for item in sequence:
+                if isinstance(item, list):
+                    seq_display.append('+'.join(item))
+                else:
+                    seq_display.append(item)
+
+            seq_text = small_font.render(f"Sekvencia: {' -> '.join(seq_display[:10])}...", True, WHITE)
             seq_rect = seq_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
             seq_bg = seq_rect.inflate(20, 20)
             pygame.draw.rect(screen, BLACK, seq_bg)

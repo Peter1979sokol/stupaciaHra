@@ -64,16 +64,46 @@ def draw_quadrants(active=None):
     pygame.display.flip()
 
 
-def show_sequence():
-    """Zobrazí celé poradie rozsvetlením kvadrantov"""
-    for item in sequence:
-        # Rozsvieti kvadrant/kvadranty
-        draw_quadrants(active=item)
-        pygame.time.wait(1000)  # Počkaj 1 sekundu
+def check_quit():
+    """Skontroluje či užívateľ stlačil ESC"""
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return True
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return True
+    return False
 
-        # Zhasni (vráť na čiernu)
-        draw_quadrants()
-        pygame.time.wait(300)  # Krátka pauza medzi kvadrantmi
+
+def show_sequence():
+    """Zobrazí celé poradie rozsvetlením kvadrantov v nekonečnej slučke"""
+    while True:
+        for item in sequence:
+            # Skontroluj ESC pred rozsvietením
+            if check_quit():
+                return True
+
+            # Rozsvieti kvadrant/kvadranty
+            draw_quadrants(active=item)
+
+            # Počkaj 1 sekundu, ale kontroluj ESC každých 50ms
+            for _ in range(20):  # 20 x 50ms = 1000ms
+                if check_quit():
+                    return True
+                pygame.time.wait(50)
+
+            # Skontroluj ESC pred zhasnutím
+            if check_quit():
+                return True
+
+            # Zhasni (vráť na čiernu)
+            draw_quadrants()
+
+            # Krátka pauza medzi kvadrantmi, tiež kontroluj ESC
+            for _ in range(6):  # 6 x 50ms = 300ms
+                if check_quit():
+                    return True
+                pygame.time.wait(50)
 
 
 def main():
@@ -92,11 +122,14 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
                     started = True
-                    show_sequence()
+                    # Spustí sekvenciu v nekonečnej slučke
+                    quit_requested = show_sequence()
+                    if quit_requested:
+                        running = False
                 elif event.key == pygame.K_ESCAPE:
                     running = False
 
-        if not started:
+        if not started and running:
             # Vykreslí základné kvadranty
             draw_quadrants()
 
@@ -126,31 +159,15 @@ def main():
             pygame.draw.rect(screen, WHITE, seq_bg, 2)
             screen.blit(seq_text, seq_rect)
 
-            pygame.display.flip()
-        else:
-            # Po skončení sekvencie
-            draw_quadrants()
-            text = font.render("Sekvencia dokončená!", True, WHITE)
-            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-            background_rect = text_rect.inflate(20, 20)
-            pygame.draw.rect(screen, BLACK, background_rect)
-            pygame.draw.rect(screen, WHITE, background_rect, 2)
-            screen.blit(text, text_rect)
-
-            restart_text = small_font.render("MEDZERNÍK - znova | ESC - ukončiť", True, WHITE)
-            restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
-            restart_bg = restart_rect.inflate(20, 20)
-            pygame.draw.rect(screen, BLACK, restart_bg)
-            pygame.draw.rect(screen, WHITE, restart_bg, 2)
-            screen.blit(restart_text, restart_rect)
+            # Pridaj info o nekonečnej slučke
+            loop_text = small_font.render("(Sekvencia sa opakuje donekonečna - ESC ukončí)", True, WHITE)
+            loop_rect = loop_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
+            loop_bg = loop_rect.inflate(20, 20)
+            pygame.draw.rect(screen, BLACK, loop_bg)
+            pygame.draw.rect(screen, WHITE, loop_bg, 2)
+            screen.blit(loop_text, loop_rect)
 
             pygame.display.flip()
-
-            # Umožní reštart
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                started = False
-                pygame.time.wait(200)  # Krátka pauza aby sa neprekrývali
 
         clock.tick(60)
 
